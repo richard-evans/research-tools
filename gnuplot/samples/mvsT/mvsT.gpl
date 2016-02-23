@@ -1,0 +1,61 @@
+#!/bin/bash
+#-------------------------------------------------------------------------------
+#      Sample gnuplot template for plotting magnetization m(T) curve
+#
+#                (c) R F L Evans 2016. All rights reserved.
+#
+#-------------------------------------------------------------------------------
+# Load styles
+load "../../journals/nature.journal"
+load "../../colours/bluegold-sl.colour"
+
+# Set output file base name
+ofile="mvsT"
+
+# Set axis labels
+set xlabel "Temperature (K)"
+# For y-label use italics for variables and offset from axis
+set ylabel "Magnetisation ({/Helvetica-Oblique m}/{/Helvetica-Oblique m}_s)" offset 0.5,0
+
+# Set axis number formatting
+set format y "%3.1f"
+
+# Set '0' line as guide to the eye
+set xzeroaxis
+
+# Set key properties
+set key top right maxrows 5 spacing 1.2
+
+#-------------------------------------------------------------------------------
+# Fitting function  m(T) = (1 - T/Tc) ^ beta
+# For T > Tc equation is not valid, so use a ternary operator
+# (bool) ? value_if_true : value_if_false
+m(T)= T<Tc ? (1-T/Tc)**beta : 0.0
+# Estimate initial variable
+Tc=560.0
+beta=0.365
+#-------------------------------------------------------------------------------
+
+# set columns to be fitted here T,|m|
+fit [] m(x) "mT.dat" u 1:2 via Tc, beta
+
+# Print fitted values to screen
+print "beta =",beta
+print "Tc =  ",Tc
+
+# Set samples for fiitted function for smoother plot
+set samples 1000
+
+# Set eps file name by concatenation (. operator)
+epsfile=ofile.".eps"
+set output epsfile
+
+#--------------------------------------------
+# Plot graph with fit
+p [-20:1020][-0.05:1.05] \
+m(x) w l ls 101 ti "Fit",\
+"mT.dat" u 1:2 ev 1 ls 2 w p title "Calculated"
+
+# Convert eps to pdf for portability
+cmd = "pstopdf ".epsfile
+sys cmd
